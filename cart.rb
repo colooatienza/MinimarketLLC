@@ -6,16 +6,19 @@ attr_accessor :fecha, :usuario, :items
 	@items = Hash.new(0)
   end
 
-  def addItem (item)
-	items[item] += 1
+  def addItem (item, cant)
+	items[item] += cant
+  end
 
+  def deleteItem (item)
+	self.items.delete(item)
   end
 
   def to_hash()
         {
 			usuario: @usuario,
 			fecha: @fecha,
-			monto: @items.keys.sum { |key| key.precio * items[key] } 
+			monto: @items.keys.sum { |key| key.precio * items[key] }.round(2)
 		}
   end
 

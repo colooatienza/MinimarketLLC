@@ -25,8 +25,7 @@ get '/items.json' do
 end
 
 get '/items/:id.json' do
-  	result = items.detect{ |item| item.id.to_i == params[:id].to_i }
-	if result then
+	if result = getItem(params[:id]) then
 		status 200
 		result.to_json
 	else
@@ -48,8 +47,7 @@ post '/items.json' do
 end
 
 put '/items/:id.json' do
-	item = items.detect{ |item| item.id.to_i == params[:id].to_i }
-	if item then
+	if item = getItem(params[:id]) then
 		if data = parse(request.body.read) then
 			if (data['sku'] || data['description'] || data['price'] || data['stock']) then
 				item.sku = data['sku'] if data['sku']
@@ -69,16 +67,55 @@ put '/items/:id.json' do
 end
 
 get '/cart/:username.json' do
-	result = carritos.detect{ |carrito| carrito.usuario == params[:username] }
-	if result then
+	getCarrito( params[:username] ).to_json
+end
+
+put '/cart/:username.json' do
+	if data = parse(request.body.read) then
+		if (data['item_id'] && data['cantidad'] ) then
+			if item = getItem(data['item_id']) then
+				carrito = getCarrito( params[:username] )
+				carrito.addItem(item, data['cantidad'])
+				status 200
+			else	
+				status 404
+				'No existe item con tal id'
+			end
+		else
+			status 422
+		end
+	end
+end
+
+delete '/cart/:username/:item_id.json' do
+	if item = getItem(params[:item_id]) then
+		carrito = getCarrito( params[:username] )
+		carrito.deleteItem(item)
 		status 200
-		result.to_json
+	else	
+		status 404
+		'No existe item con tal id'
+	end
+end
+
+define_method :getCarrito  do |usuario|
+	result = carritos.detect{ |carrito| carrito.usuario == usuario }
+	if result then
+		result
 	else
-		carrito = Cart.new(params[:username])
+		carrito = Cart.new(usuario)
 		carritos << carrito
-		status 201
-		carrito.to_json
+		carrito
 		
+	end
+end
+
+define_method :getItem  do |id|
+	result = items.detect{ |item| item.id.to_i == id.to_i }
+	if result then
+		result
+	else
+		nil		
 	end
 end
 
